@@ -173,14 +173,12 @@ THREE.UnrealBloomPass.prototype = Object.assign( Object.create( THREE.Pass.proto
 
 		if ( maskActive ) renderer.context.disable( renderer.context.STENCIL_TEST );
 
-		//var alphaTestTexture = new THREE.Texture();
-		//alphaTestTexture.clone(readBuffer.texture);
-		//alphaTestTexture.needsUpdate = true;
+
 		// 1. Extract Bright Areas
 		this.highPassUniforms[ "tDiffuse" ].value = readBuffer.texture;
 		this.highPassUniforms[ "luminosityThreshold" ].value = this.threshold;
 		this.quad.material = this.materialHighPassFilter;
-		renderer.render( this.scene, this.camera, this.renderTargetBright, true );
+		renderer.render( this.scene, this.camera , this.renderTargetBright, true );
 
 		// 2. Blur All the mips progressively
 		var inputRenderTarget = this.renderTargetBright;
@@ -206,7 +204,7 @@ THREE.UnrealBloomPass.prototype = Object.assign( Object.create( THREE.Pass.proto
         
 			inputRenderTarget = this.renderTargetsVertical[i];
 		}
-
+        
 		// Composite All the mips
 		this.quad.material = this.compositeMaterial;
 		this.compositeMaterial.uniforms["bloomStrength"].value = this.strength;
@@ -214,11 +212,11 @@ THREE.UnrealBloomPass.prototype = Object.assign( Object.create( THREE.Pass.proto
 		this.compositeMaterial.uniforms["bloomTintColors"].value = this.bloomTintColors;
 		this.compositeMaterial.uniforms[ "alphaTestTexture" ].value = readBuffer.texture;
 		renderer.render( this.scene, this.camera, this.renderTargetsHorizontal[0], true );
-
+        
 		// Blend it additively over the input texture
 		this.quad.material = this.materialCopy;
 		this.copyUniforms[ "tDiffuse" ].value = this.renderTargetsHorizontal[0].texture;
-
+        
 		if ( maskActive ) renderer.context.enable( renderer.context.STENCIL_TEST );
 
 		renderer.render( this.scene, this.camera, readBuffer, false );
@@ -323,18 +321,25 @@ THREE.UnrealBloomPass.prototype = Object.assign( Object.create( THREE.Pass.proto
 				uniform vec3 bloomTintColors[NUM_MIPS];\
 				\
 				float lerpBloomFactor(const in float factor) { \
-					float mirrorFactor = 1.2 - factor;\
+					float mirrorFactor = 1.0 - factor;\
 					return mix(factor, mirrorFactor, bloomRadius);\
 				}\
 				\
 				void main() {\
 					vec4 testColor = texture2D(alphaTestTexture, vUv);\
-					if(testColor.a>0.0)\n{\
-					gl_FragColor = bloomStrength * ( lerpBloomFactor(bloomFactors[0]) * vec4(bloomTintColors[0], 1.0) * texture2D(blurTexture1, vUv) + \
+					\
+					float alp = texture2D(blurTexture5, vUv).a;\
+					alp += texture2D(blurTexture1, vUv).a;\
+					alp += texture2D(blurTexture2, vUv).a;\
+					alp += texture2D(blurTexture3, vUv).a;\
+					alp += texture2D(blurTexture4, vUv).a;\
+					if(testColor.a>= 0.0)\n\
+					{\
+						vec4 color = bloomStrength * ( lerpBloomFactor(bloomFactors[0]) * vec4(bloomTintColors[0], 1.0) * texture2D(blurTexture1, vUv) + \
 												 lerpBloomFactor(bloomFactors[1]) * vec4(bloomTintColors[1], 1.0) * texture2D(blurTexture2, vUv) + \
-											 lerpBloomFactor(bloomFactors[2]) * vec4(bloomTintColors[2], 1.0) * texture2D(blurTexture3, vUv) + \
-											 lerpBloomFactor(bloomFactors[3]) * vec4(bloomTintColors[3], 1.0) * texture2D(blurTexture4, vUv) + \
-											 lerpBloomFactor(bloomFactors[4]) * vec4(bloomTintColors[4], 1.0) * texture2D(blurTexture5, vUv) );\
+											 lerpBloomFactor(bloomFactors[2]) * vec4(bloomTintColors[2], 1.0) * texture2D(blurTexture3, vUv));\
+						color.a = 0.5;\
+						gl_FragColor = color;\
 					}\n\
 					else{\
 						gl_FragColor = testColor;\
