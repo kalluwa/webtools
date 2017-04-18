@@ -80,25 +80,24 @@ THREE.BloomPass.prototype = Object.assign( Object.create( THREE.Pass.prototype )
 
 	render: function ( renderer, writeBuffer, readBuffer, delta, maskActive ) {
 
-	
 		if ( maskActive ) renderer.context.disable( renderer.context.STENCIL_TEST );
 
 		// Render quad with blured scene into texture (convolution pass 1)
 
-		//this.quad.material = this.materialConvolution;
-        //
-		//this.convolutionUniforms[ "tDiffuse" ].value = readBuffer.texture;
-		//this.convolutionUniforms[ "uImageIncrement" ].value = THREE.BloomPass.blurX;
-        //
-		//renderer.render( this.scene, this.camera, this.renderTargetX, true );
+		this.quad.material = this.materialConvolution;
+
+		this.convolutionUniforms[ "tDiffuse" ].value = readBuffer.texture;
+		this.convolutionUniforms[ "uImageIncrement" ].value = THREE.BloomPass.blurX;
+
+		renderer.render( this.scene, this.camera, this.renderTargetX, true );
 
 
 		// Render quad with blured scene into texture (convolution pass 2)
 
-		//this.convolutionUniforms[ "tDiffuse" ].value = this.renderTargetX.texture;
-		//this.convolutionUniforms[ "uImageIncrement" ].value = THREE.BloomPass.blurY;
-        //
-		//renderer.render( this.scene, this.camera, this.renderTargetY, true );
+		this.convolutionUniforms[ "tDiffuse" ].value = this.renderTargetX.texture;
+		this.convolutionUniforms[ "uImageIncrement" ].value = THREE.BloomPass.blurY;
+
+		renderer.render( this.scene, this.camera, this.renderTargetY, true );
 
 		// Render original scene with superimposed blur to texture
 

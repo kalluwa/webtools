@@ -26,11 +26,11 @@ THREE.ConvolutionShader = {
 	vertexShader: [
 
 		"uniform vec2 uImageIncrement;",
-		
+
 		"varying vec2 vUv;",
-		"varying vec2 oUv;",//original uv
+
 		"void main() {",
-			"oUv = uv;",
+
 			"vUv = uv - ( ( KERNEL_SIZE_FLOAT - 1.0 ) / 2.0 ) * uImageIncrement;",
 			"gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
 
@@ -46,23 +46,20 @@ THREE.ConvolutionShader = {
 		"uniform vec2 uImageIncrement;",
 
 		"varying vec2 vUv;",
-		"varying vec2 oUv;",//original uv
+
 		"void main() {",
 
 			"vec2 imageCoord = vUv;",
 			"vec4 sum = vec4( 0.0, 0.0, 0.0, 0.0 );",
-			"vec4 testAlpha = texture2D( tDiffuse, oUv );",
-			//"if(testAlpha.a){",
-			//	"for( int i = 0; i < KERNEL_SIZE_INT; i ++ ) {",
-			//		"vec4 color = texture2D( tDiffuse, imageCoord );",
-			//		"if(color.a){",
-			//		"sum +=  color* cKernel[ i ];",
-			//		"imageCoord += uImageIncrement;",
-			//		"}",
-			//	"}",
-			//"}",
 
-			"gl_FragColor = vec4(1.0,0.0,0.0,1.0);",
+			"for( int i = 0; i < KERNEL_SIZE_INT; i ++ ) {",
+
+				"sum += texture2D( tDiffuse, imageCoord ) * cKernel[ i ];",
+				"imageCoord += uImageIncrement;",
+
+			"}",
+
+			"gl_FragColor = sum;",
 
 		"}"
 

@@ -11,7 +11,8 @@ THREE.CopyShader = {
 		"tDiffuse": { value: null },
 		"opacity":  { value: 1.0 },
 		"renderToScreen":{value:0.0},
-		"backgroundTex":{value:null}
+		"backgroundTex":{value:null},
+		"foregroundTex":{value:null}
 	},
 
 	vertexShader: [
@@ -39,13 +40,16 @@ THREE.CopyShader = {
 		
 		"uniform sampler2D backgroundTex;",
 		
+		"uniform sampler2D foregroundTex;",
+		
 		"void main() {",
 		
 			"vec4 texel = texture2D( tDiffuse, vUv );",
 			"vec4 backPix = texture2D(backgroundTex,vUv);",
+			"vec4 foreTex = texture2D(foregroundTex,vUv);",
 			"float alpha = opacity;",
-			"if(renderToScreen){ alpha =texel.a; }//if(texel.r + texel.b + texel.g<0.2)alpha=(texel.r + texel.b + texel.g)/2.0;}",
-			"gl_FragColor = alpha * texel + (1.0 - alpha)*backPix;",
+			"if(renderToScreen){ alpha =texel.r / 1.5; }//if(texel.r + texel.b + texel.g<0.2)alpha=(texel.r + texel.b + texel.g)/2.0;}",
+			"gl_FragColor = alpha * texel + backPix;",
 
 		"}"
 

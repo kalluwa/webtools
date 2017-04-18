@@ -52,8 +52,8 @@
 		<script src="js/shaders/CopyShader.js"></script>
 		<script src="js/shaders/FXAAShader.js"></script>
 		<script src="js/shaders/ConvolutionShader.js"></script>
-		<script src="js/postprocessing/BloomPass.js"></script>
 		<script src="js/shaders/LuminosityHighPassShader.js"></script>
+		<script src="js/postprocessing/BloomPass.js"></script>
 		<script src="js/postprocessing/UnrealBloomPass.js"></script>
 
 		<div id="info">
@@ -81,11 +81,9 @@
 			var standardMaterial;
 			var hdrCubeRenderTarget;
 
-			var bgScene;  
-			
-			var backgroundRendertarget;
-			var forgroundRendertarget;
-			var copyShader;
+			var bg;
+			var bgScene; 
+			var bgCam;  
 			
 			init();
 			animate();
@@ -95,10 +93,11 @@
 				container = document.createElement( 'div' );
 				document.body.appendChild( container );
 
-				
-				//主要的绘制场景
+				camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 2000 );
+				camera.position.set( 0.0, 35, 35 * 3.5 );
+
 				scene = new THREE.Scene();
-				bgScene = new THREE.Scene();
+
 				renderer = new THREE.WebGLRenderer( { antialias: false } );
 				renderer.setClearColor( new THREE.Color( 0x111111 ) );
 				renderer.toneMapping = THREE.LinearToneMapping;
@@ -117,11 +116,7 @@
 				torusMesh1.receiveShadow = true;
 				scene.add( torusMesh1 );
 				objects.push( torusMesh1 );
-				
-				var objTor = torusMesh1.clone();
-				bgScene.add( objTor );
-				objects.push(objTor);
-				
+
 				var textureLoader = new THREE.TextureLoader();
 				textureLoader.load( "./textures/roughness_map.jpg", function( map ) {
 					map.wrapS = THREE.RepeatWrapping;
@@ -133,32 +128,21 @@
 					standardMaterial.needsUpdate = true;
 				} );
 
-				//背景场景
-				//设置skybox
-				var imagePrefix = "images/dawnmountain-";
-				var directions  = ["xpos", "xneg", "ypos", "yneg", "zpos", "zneg"];
-				var imageSuffix = ".png";
-				var skyGeometry = new THREE.CubeGeometry( 5000, 5000, 5000 );	
-				
-				var materialArray = [];
-				for (var i = 0; i < 6; i++)
-					materialArray.push( new THREE.MeshBasicMaterial({
-						map: THREE.ImageUtils.loadTexture( imagePrefix + directions[i] + imageSuffix ),
-						side: THREE.BackSide
+				var texture = THREE.ImageUtils.loadTexture( '1.jpg' );
+				bg = new THREE.Mesh(
+					new THREE.PlaneGeometry(2, 2, 0),
+					new THREE.MeshBasicMaterial({
+						map: texture
 					}));
-				var skyMaterial = new THREE.MeshFaceMaterial( materialArray );
-				var skyBox = new THREE.Mesh( skyGeometry, skyMaterial );
+
+				bg .material.depthTest = false;
+				bg .material.depthWrite = false;
+				bgScene = new THREE.Scene();
+				bgCam   = new THREE.Camera();
+				bgScene.add(bgCam);
+				bgScene.add(bg);
 				
-				
-				bgScene.add(skyBox);
-				
-				
-				camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 20000 );
-				camera.position.set( 0.0, 35, 35 * 3.5 );
-				
-				
-				bgScene.add(camera);
-				
+
 				var genCubeUrls = function( prefix, postfix ) {
 					return [
 						prefix + 'px' + postfix, prefix + 'nx' + postfix,
@@ -182,15 +166,14 @@
 				// Lights
 
 				scene.add( new THREE.AmbientLight( 0x222222 ) );
-				//bgScene.add( new THREE.AmbientLight( 0x222222 ) );
-				
+
 				var spotLight = new THREE.SpotLight( 0xffffff );
 				spotLight.position.set( 50, 100, 50 );
 				spotLight.angle = Math.PI / 7;
 				spotLight.penumbra = 0.8;
 				spotLight.castShadow = true;
 				scene.add( spotLight );
-				//bgScene.add( spotLight.clone() );
+
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				renderer.shadowMap.enabled = true;
@@ -198,22 +181,22 @@
 
 				renderScene = new THREE.RenderPass(scene, camera);
 
-				//var renderBg = new THREE.RenderPass(bgScene,bgCam);
-		        // renderScene.clear = true;
-				effectFXAA = new THREE.ShaderPass(THREE.FXAAShader);
-				effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight );
+				var renderBg = new THREE.RenderPass(bgScene,bgCam);
+		    // renderScene.clear = true;
+		    effectFXAA = new THREE.ShaderPass(THREE.FXAAShader);
+		    effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight );
 
-				//最后一个pass用于输出到屏幕上面
-				copyShader = new THREE.ShaderPass(THREE.CopyShader);
+				var copyShader = new THREE.ShaderPass(THREE.CopyShader);
+				copyShader.setBackTex(texture);
 				copyShader.renderToScreen = true;
 
-				bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);//1.0, 9, 0.5, 512);
-				//bloomPass = new THREE.BloomPass(1, 25, 2);
-				composer = new THREE.EffectComposer(renderer);
-		        composer.setSize(window.innerWidth, window.innerHeight);
-
-			    composer.addPass(renderScene);
-				//composer.addPass(effectFXAA);
+		    //bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);//1.0, 9, 0.5, 512);
+			bloomPass = new THREE.BloomPass();
+			composer = new THREE.EffectComposer(renderer);
+		    composer.setSize(window.innerWidth, window.innerHeight);
+		    //composer.addPass(renderBg);
+			composer.addPass(renderScene);
+				composer.addPass(effectFXAA);
 		        composer.addPass(bloomPass);
 				composer.addPass(copyShader);
 				//renderer.toneMapping = THREE.ReinhardToneMapping;
@@ -244,10 +227,7 @@
 				gui.open();
 				
 				//非常重要
-				backgroundRendertarget = new THREE.WebGLRenderTarget(window.innerWidth,window.innerHeight,{ minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat });
-				forgroundRendertarget = new THREE.WebGLRenderTarget(window.innerWidth,window.innerHeight,{ minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat });
 				renderer.setClearColor( new THREE.Color( 0xFFFFFF ),0.0);
-				
 			}
 
 			function onWindowResize() {
@@ -258,8 +238,6 @@
 				camera.aspect = width / height;
 				camera.updateProjectionMatrix();
 
-				//create a new rendertarget
-			    backgroundRendertarget = new THREE.WebGLRenderTarget(width,height,{ minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat });
 				renderer.setSize( width, height );
 				composer.setSize( width, height );
 				effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight );
@@ -272,6 +250,8 @@
 				requestAnimationFrame( animate );
 
 				stats.begin();
+				
+				//renderer.clearColor();
 				
 				render();
 				stats.end();
@@ -309,14 +289,16 @@
 					object.rotation.y += 0.005;
 
 				}
+				 
+				//renderer.clear();
+				//renderer.render(scene, cam);
+				 //
 				
-				//绘制背景
 				
-				renderer.render( bgScene, camera,backgroundRendertarget);
-				//renderer.render( scene, camera  );//,forgroundRendertarget);
-				copyShader.setBackTex(backgroundRendertarget.texture);
-				//copyShader.setForeTex(forgroundRendertarget.texture);
-				//合成数据
+				//renderer.autoClear = false;
+				//renderer.render(bgScene, bgCam);
+				
+				//renderer.render( scene, camera );
 				composer.render();
 			}
 

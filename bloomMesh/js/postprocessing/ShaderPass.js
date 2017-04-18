@@ -46,6 +46,10 @@ THREE.ShaderPass.prototype = Object.assign( Object.create( THREE.Pass.prototype 
 		this.uniforms["backgroundTex"].value = mapTexture;
 	},
 	
+	setForeTex: function(mapTexture){
+		this.uniforms["foregroundTex"].value = mapTexture;
+	},
+	
 	render: function( renderer, writeBuffer, readBuffer, delta, maskActive ) {
 
 		if ( this.uniforms[ this.textureID ] ) {
