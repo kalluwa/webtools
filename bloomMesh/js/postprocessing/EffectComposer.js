@@ -74,37 +74,37 @@ Object.assign( THREE.EffectComposer.prototype, {
 
 			pass.render( this.renderer, this.writeBuffer, this.readBuffer, delta, maskActive );
 
-			if ( pass.needsSwap ) {
-
-				if ( maskActive ) {
-
-					var context = this.renderer.context;
-
-					context.stencilFunc( context.NOTEQUAL, 1, 0xffffffff );
-
-					this.copyPass.render( this.renderer, this.writeBuffer, this.readBuffer, delta );
-
-					context.stencilFunc( context.EQUAL, 1, 0xffffffff );
-
-				}
-
-				this.swapBuffers();
-
-			}
-
-			if ( THREE.MaskPass !== undefined ) {
-
-				if ( pass instanceof THREE.MaskPass ) {
-
-					maskActive = true;
-
-				} else if ( pass instanceof THREE.ClearMaskPass ) {
-
-					maskActive = false;
-
-				}
-
-			}
+			//if ( pass.needsSwap ) {
+            //
+			//	if ( maskActive ) {
+            //
+			//		var context = this.renderer.context;
+            //
+			//		context.stencilFunc( context.NOTEQUAL, 1, 0xffffffff );
+            //
+			//		this.copyPass.render( this.renderer, this.writeBuffer, this.readBuffer, delta );
+            //
+			//		context.stencilFunc( context.EQUAL, 1, 0xffffffff );
+            //
+			//	}
+            //
+			//	this.swapBuffers();
+            //
+			//}
+            //
+			//if ( THREE.MaskPass !== undefined ) {
+            //
+			//	if ( pass instanceof THREE.MaskPass ) {
+            //
+			//		maskActive = true;
+            //
+			//	} else if ( pass instanceof THREE.ClearMaskPass ) {
+            //
+			//		maskActive = false;
+            //
+			//	}
+            //
+			//}
 
 		}
 

@@ -47,9 +47,10 @@ THREE.CopyShader = {
 			"vec4 texel = texture2D( tDiffuse, vUv );",
 			"vec4 backPix = texture2D(backgroundTex,vUv);",
 			"vec4 foreTex = texture2D(foregroundTex,vUv);",
+			"vec4 mergeBackPixel = backPix*(1.0 - foreTex.a) + foreTex.a * foreTex; ",
 			"float alpha = opacity;",
 			"if(renderToScreen){ alpha =texel.r / 1.5; }//if(texel.r + texel.b + texel.g<0.2)alpha=(texel.r + texel.b + texel.g)/2.0;}",
-			"gl_FragColor = alpha * texel + backPix;",
+			"gl_FragColor = alpha * texel + mergeBackPixel;",
 
 		"}"
 

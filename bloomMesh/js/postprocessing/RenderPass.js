@@ -24,6 +24,16 @@ THREE.RenderPass.prototype = Object.assign( Object.create( THREE.Pass.prototype 
 
 	constructor: THREE.RenderPass,
 
+	//设置返回的数据
+	setRenderImage : function(img){
+		this.returnRenderTarget = img;
+	},
+	renderNew: function ( renderer, writeBuffer, readBuffer, delta, maskActive ) {
+		if(this.returnRenderTarget!= undefined)
+			readBuffer = this.returnRenderTarget;
+		else
+			console.log("error when render renderpass");
+	},
 	render: function ( renderer, writeBuffer, readBuffer, delta, maskActive ) {
 
 		var oldAutoClear = renderer.autoClear;
