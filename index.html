@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>POST Handler</title>
+        <script type="text/JavaScript">
+        console.log('sodalog add inner event listener');
+            window.addEventListener("message", function( event ) {
+                // 监听父窗口发送过来的数据向服务器发送post请求
+                var data = event.data;
+                console.log('inner data :>> ', data);
+                // setTimeout(() => {
+                //     window.parent.postMessage(data, "*"); 
+                // }, 5000);
+            }, false);
+
+            // setTimeout(() => {
+            //         window.parent.postMessage({
+            //             type: 'request-html',
+            //             payload: {
+            //                 id: ['aaa']
+            //             }
+            //         }, "*"); 
+            //     }, 3000);
+        </script>
+    </head>
+
+    <body>
+        <span>
+            按下ctrl+点击进入第二个场景
+        </span>
+        <script src="three/stats.min.js"></script>
+        <script src="three/three.min.js"></script>
+        <script src="three/FBXLoader.js"></script>
+        <script src="three/Reflector.js"></script>
+        <script src="three/inflate.min.js"></script>
+        <script src="three/CSS2DRenderer.js"></script>
+        <script src="three/OrbitControls.js"></script>
+        
+        <script type="text/JavaScript">
+
+			let camera, scene, renderer, stats;
+
+			const clock = new THREE.Clock();
+
+			let mixer;
+			var checkmeshes = null;
+			
+			// model
+			const loader = new THREE.FBXLoader();
+			const mesh_material = new THREE.MeshBasicMaterial( { 
+					color: 0x99eeee,
+					transparent: true,
+					opacity:0.3,
+				} );
+			const highlight_material = new THREE.MeshBasicMaterial({
+				color:0x15e8d1,
+				opacity:0.3,
+				transparent: true
+			})
+			var cur_scene = null;
+			var scene_blowup = null;
+			var ctrl_key = false;
+			init();
+			animate();
+
+			//event calback-----------------------------------
+
+			//!send message to server
+			function post_data(data_str)
+			{
+				window.parent.postMessage(data_str, "*");
+			}
+			function loaded_callback()
+			{
+				var pre = ['',
+				'json',
+				'{',
+				'	"type": "children-components-load-done",',
+				'	"payload": {\n',
+				].join('\n');
+
+				var content_ids = '		"components": [\n';
+				//count how many checkmeshes
+				for(var i=0;i<checkmeshes.length;i++){
+                    if(checkmeshes[i].isMesh)
+					    content_ids += '			"'+checkmeshes[i].id_str+'",\n';
+				}
+				content_ids += 	'		]\n';
+
+				var post = [
+				,
+				'	}',
+				'}'
+				].join('\n');
+			
+				var data_str = pre + content_ids + post;
+				post_data(data_str);
+			}
+
+			//get mesh by id(id001 id002)
+			function getMeshById(id_str)
+			{
+				if(checkmeshes.length<=0) return;
+
+				for(var i=0;i<checkmeshes.length;i++)
+				{
+					if(checkmeshes[i].id_str == id_str)
+						return checkmeshes[i];
+				}
+			}
+
+            //id(number) start from 1
+            function setMeshId(mesh,id_num)
+            {
+                if(id_num<10)
+                    mesh.id_str = "id00"+id_num.toString();
+                else
+                    mesh.id_str = "id0"+id_num.toString();
+
+            }
+			//-------------------------------------------------
+			//labels-------------------------------------------
+
+            const moonDiv = document.createElement( 'div' );
+            moonDiv.className = 'label';
+            moonDiv.textContent = 'Moon';
+            moonDiv.style.marginTop = '-1em';
+            const moonLabel = new CSS2DObject( moonDiv );
+            moonLabel.position.set( 0, MOON_RADIUS, 0 );
+            moon.add( moonLabel );
+
+            //--------------------------labels-----------------
+			function changeScene()
+			{
+				scene_blowup = new THREE.Scene();
+				scene_blowup.background = new THREE.Color( 0x101418 );
+				cur_scene = scene_blowup;
+
+				
+				loader.load( 'models/fbx/炸开楼层.fbx', function ( object ) {
+					
+					mixer = new THREE.AnimationMixer( object );
+
+					const action = mixer.clipAction( object.animations[ 0 ] );
+					action.play();
+
+					let mesh_count = 0;
+					object.traverse( function ( child ) {
+
+						if ( child.isMesh ) {
+
+							child.castShadow = true;
+							child.receiveShadow = true;
+
+							
+							child.material = mesh_material;
+
+							
+							mesh_count++;
+
+							// if(mesh_count<10)
+							// 	child.id_str = "id00"+mesh_count.toString();
+							// else
+							// 	child.id_str = "id0"+mesh_count.toString();
+                            setMeshId(child,mesh_count);
+
+							
+							//console.log(child);
+							//checkmeshes.push(child.clone());
+
+
+						}
+
+						
+					} );
+					console.log("炸开楼层.fbx");
+					console.log("mesh count is:"+mesh_count);
+					console.log("animation count is:"+object.animations.length);
+					object.scale.set(0.01,0.01,0.01);
+                    object.position.set(0,0,-200);
+					scene_blowup.add( object );
+					// for(var i=0;i<checkmeshes.length;i++)
+					// {
+					// 	checkmeshes[i].scale.set(0.01,0.01,0.01);
+					// 	scene.add(checkmeshes[i]);
+					// }
+					
+					checkmeshes = object.children;
+						
+					loaded_callback();
+				} );
+
+			}
+
+			function init() {
+
+				const container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.set( 0, 200, -300 );
+
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color( 0x101418 );
+
+				
+				cur_scene = scene;
+				//scene.fog = new THREE.Fog( 0xa0a0a0, 200, 1000 );
+
+				const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
+				hemiLight.position.set( 0, 200, 0 );
+				scene.add( hemiLight );
+
+				const dirLight = new THREE.DirectionalLight( 0xffffff );
+				dirLight.position.set( 0, 200, 100 );
+				dirLight.castShadow = true;
+				dirLight.shadow.camera.top = 180;
+				dirLight.shadow.camera.bottom = - 100;
+				dirLight.shadow.camera.left = - 120;
+				dirLight.shadow.camera.right = 120;
+				scene.add( dirLight );
+
+				// scene.add( new THREE.CameraHelper( dirLight.shadow.camera ) );
+				var wire_mat = new THREE.MeshBasicMaterial( { color: 0x5fd0ff, wireframe: true, transparent: false,opacity:0.5 } ); 
+				var basic_material = new THREE.MeshBasicMaterial( { 
+					color: 0x99eeee,
+					transparent: true,
+					opacity:0.5,
+					blending:THREE.NormalBlending 
+				} );
+				// ground
+				// const mesh = new THREE.Mesh( new THREE.PlaneBufferGeometry( 10000, 10000 ), new THREE.MeshPhongMaterial( { color: 0xFFFFFF, depthWrite: false ,reflectivity:1.0} ) );
+				// mesh.rotation.x = - Math.PI / 2;
+				// mesh.receiveShadow = true;
+				// scene.add( mesh );
+
+				// const grid = new THREE.GridHelper( 2000, 20, 0x000000, 0x000000 );
+				// grid.material.opacity = 0.2;
+				// grid.material.transparent = true;
+				// scene.add( grid );
+
+				// let geometry, material;
+
+				// geometry = new THREE.PlaneBufferGeometry( 10000, 10000 );
+				// const groundMirror = new Reflector( geometry, {
+				// 	clipBias: 0.003,
+				// 	textureWidth: 1024,
+				// 	textureHeight: 1024,
+				// 	color: 0x222222
+				// } );
+				// groundMirror.position.y =-165;
+				// groundMirror.rotateX( - Math.PI / 2 );
+				// scene.add( groundMirror );
+				
+				//loader.load( 'models/fbx/Samba Dancing.fbx', function ( object ) {
+				
+				
+
+				loader.load( 'models/fbx/大楼.fbx', function ( object ) {
+					
+					object.scale.set(0.01,0.01,0.01);
+
+					//solid
+					console.log(object);
+					var solidmodel = object.clone();
+					solidmodel.traverse( function ( child ) {
+
+					if ( child.isMesh ) {
+
+						child.castShadow = true;
+						child.receiveShadow = true;
+
+						child.material = child.material.clone();
+						child.material = wire_mat;
+
+					}});
+					solidmodel.scale.set(0.01,0.01,0.01);
+					scene.add( solidmodel );
+					
+					let mesh_count = 0;
+					object.traverse( function ( child ) {
+
+						if ( child.isMesh ) {
+
+							child.castShadow = true;
+							child.receiveShadow = true;
+
+							child.material = basic_material;
+							
+							mesh_count++;
+
+                            setMeshId(child,mesh_count);
+						}
+
+					} );
+					console.log("mesh count is:"+mesh_count);
+					console.log("animation count is:"+object.animations.length);
+					object.scale.set(0.01,0.01,0.01);
+					scene.add( object );
+
+					checkmeshes = object.children;
+
+					
+					loaded_callback();
+				} );
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.shadowMap.enabled = true;
+				container.appendChild( renderer.domElement );
+
+				const controls = new THREE.OrbitControls( camera, renderer.domElement );
+				controls.target.set( 0, 100, 0 );
+				controls.update();
+
+				window.addEventListener( 'resize', onWindowResize, false );
+				window.addEventListener( 'click', onMouseClick, false );
+				window.addEventListener( 'keydown', onKeyDown, false );
+				window.addEventListener( 'mousemove', onMouseMove, false );
+				// stats
+			    //stats = new Stats();
+				//container.appendChild( stats.dom );
+
+			}
+
+			function onKeyDown(e){
+				ctrl_key = e.ctrlKey;
+			}
+			function onKeyUp(e){
+				ctrl_key = e.ctrlKey;
+			}
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			var raycaster = new THREE.Raycaster();
+    		var mouse = new THREE.Vector2();
+			function onMouseClick( event ) {
+
+				//only valid when ctrl is pressed down
+				if(!ctrl_key)
+					return;
+				//通过鼠标点击的位置计算出raycaster所需要的点的位置，以屏幕中心为原点，值的范围为-1到1.
+
+				mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+				mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+				// 通过鼠标点的位置和当前相机的矩阵计算出raycaster
+				raycaster.setFromCamera( mouse, camera );
+
+				// 获取raycaster直线和所有模型相交的数组集合
+				var intersects = raycaster.intersectObjects( checkmeshes );
+
+				//将所有的相交的模型的颜色设置为红色，如果只需要将第一个触发事件，那就数组的第一个模型改变颜色即可
+				//reset all color
+				for(var i =0;i<checkmeshes.length;i++){
+					checkmeshes[i].material = mesh_material;
+				}
+
+                if(intersects.length > 0)
+				{
+                    for ( var i = 0; i < 1; i++ ) {
+                        //console.log(intersects[i]);
+                        var mat = intersects[i].object.material.clone();
+                        mat.color.set( 0xff0000 );
+                        intersects[ i ].object.material = mat;
+                    }
+                    
+					if(cur_scene == scene)
+					{
+						changeScene();
+					}
+				}
+
+			}
+			
+			function onMouseMove()
+			{
+				if(checkmeshes==null) return;
+				mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+				mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+				// 通过鼠标点的位置和当前相机的矩阵计算出raycaster
+				raycaster.setFromCamera( mouse, camera );
+
+				// 获取raycaster直线和所有模型相交的数组集合
+				var intersects = raycaster.intersectObjects( checkmeshes );
+
+				//将所有的相交的模型的颜色设置为红色，如果只需要将第一个触发事件，那就数组的第一个模型改变颜色即可
+				//reset all color
+				for(var i =0;i<checkmeshes.length;i++){
+					checkmeshes[i].material = mesh_material;
+				}
+
+				if(intersects.length > 0)
+					for ( var i = 0; i < 1; i++ ) {
+						//console.log(intersects[i]);
+						//var mat = intersects[ i ].object.material.clone();
+						//mat.color.set( 0xff0000 );
+						intersects[i].object.material = highlight_material;
+					}	
+			}
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				const delta = clock.getDelta();
+
+				if ( mixer ) mixer.update( delta );
+
+				renderer.render( cur_scene, camera );
+
+				//stats.update();
+
+			}
+
+		</script>
+    </body>
+</html>
