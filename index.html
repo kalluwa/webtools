@@ -35,7 +35,6 @@
         <script src="three/FBXLoader.js"></script>
         <script src="three/Reflector.js"></script>
         <script src="three/inflate.min.js"></script>
-        <script src="three/CSS2DRenderer.js"></script>
         <script src="three/OrbitControls.js"></script>
         
         <script type="text/JavaScript">
@@ -121,15 +120,7 @@
 
             }
 			//-------------------------------------------------
-			//labels-------------------------------------------
-
-            const moonDiv = document.createElement( 'div' );
-            moonDiv.className = 'label';
-            moonDiv.textContent = 'Moon';
-            moonDiv.style.marginTop = '-1em';
-            const moonLabel = new CSS2DObject( moonDiv );
-            moonLabel.position.set( 0, MOON_RADIUS, 0 );
-            moon.add( moonLabel );
+			
 
             //--------------------------labels-----------------
 			function changeScene()
